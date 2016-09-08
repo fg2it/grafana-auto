@@ -4,7 +4,9 @@ machine:
 
 dependencies:
   pre:
+    - sudo dpkg --add-architecture armhf
     - sudo apt-get update
+    - sudo apt-get install libc6:armhf
     - sudo cp ./qemu-arm-static /usr/bin/
     - sudo cp ./qemu-arm /usr/share/binfmts/
     - qemu-arm-static -version
