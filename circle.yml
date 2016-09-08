@@ -1,0 +1,14 @@
+machine:
+  services:
+    - docker
+
+dependencies:
+  pre:
+    - sudo apt-get update
+    - sudo cp ./qemu-arm-static /usr/bin/
+    - sudo cp ./qemu-arm /usr/share/binfmts/
+    - qemu-arm-static -version
+  override:
+    - docker info
+    - docker pull resin/armv7hf-debian:jessie
+    - docker run -t --name test -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static resin/armv7hf-debian:jessie sh -c 'echo hello'
