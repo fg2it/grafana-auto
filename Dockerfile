@@ -38,7 +38,7 @@ RUN echo "deb http://dl.bintray.com/fg2it/deb jessie main" \
     cd $GOPATH/src/github.com/grafana/grafana  && \
     git checkout v${GRAFANAVERSION}            && \
     go run build.go setup     && \
-    $GOPATH/bin/godep restore -v && \
+    $GOPATH/bin/godep restore -d && \
     npm install --sass_binary_site=https://dl.bintray.com/fg2it/generic/ && \
     npm install -g grunt-cli  && \
     go run build.go build pkg-deb
