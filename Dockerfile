@@ -1,10 +1,6 @@
+#hand generated :-)
 #Grafana 3.1.1 on wheezy/jessie using node 5.10.1
-#uses phantomjs binary from
-#https://github.com/fg2it/phantomjs-on-raspberry/releases/tag/v2.1.1-wheezy-jessie
-#and some pre-build binary from a bintray repo
-#fpm 1.6.0
-#node-sass binding
-FROM resin/rpi-raspbian:jessie
+FROM debian:jessie
 MAINTAINER fg2it
 
 ENV PATH=/usr/local/go/bin:$PATH \
@@ -12,35 +8,56 @@ ENV PATH=/usr/local/go/bin:$PATH \
     GRAFANAVERSION=3.1.1 \
     NODEVERSION=5.10.1 \
     PHJSURL=https://github.com/fg2it/phantomjs-on-raspberry/releases/download/v2.1.1-wheezy-jessie/
-
-#gcc libc-dev for go-sqlite
-RUN echo "deb http://dl.bintray.com/fg2it/deb jessie main" \
-      | tee -a /etc/apt/sources.list && \
-    apt-get update       && \
+    
+RUN apt-get update       && \
     apt-get install -y      \
+        xz-utils            \
+	bzip2               \
         curl                \
         git                 \
         ca-certificates     \
         binutils            \
         libfontconfig1      \
+	make                \
         gcc                 \
         libc-dev            \
-        rubygem-fpm      && \
-    curl -sSL https://github.com/hypriot/golang-armbuilds/releases/download/v1.5.2/go1.5.2.linux-armv7.tar.gz  \
+	g++                 \
+	ruby                \
+	ruby-dev         && \
+    echo "deb http://emdebian.org/tools/debian/ jessie main" >> /etc/apt/sources.list    && \
+    curl -sSL http://emdebian.org/tools/debian/emdebian-toolchain-archive.key | apt-key add - && \
+    dpkg --add-architecture armhf && \
+    apt-get update       && \
+    apt-get install -y      \
+        crossbuild-essential-armhf && \
+    gem install --no-ri --no-rdoc fpm      && \
+    curl -sSL https://storage.googleapis.com/golang/go1.5.2.linux-amd64.tar.gz \
       | tar -xz -C /usr/local && \
-    curl -sSL ${PHJSURL}/phantomjs -o /usr/local/bin/phantomjs   && \
-    chmod a+x /usr/local/bin/phantomjs && \
-    curl -sSL https://nodejs.org/dist/v${NODEVERSION}/node-v${NODEVERSION}-linux-armv7l.tar.xz    \
+    curl -sSL https://nodejs.org/dist/v${NODEVERSION}/node-v${NODEVERSION}-linux-x64.tar.xz    \
       | tar -xJ --strip-components=1 -C /usr/local && \
     mkdir -p $GOPATH          && \
     cd $GOPATH                && \
     go get github.com/grafana/grafana  || true && \
     cd $GOPATH/src/github.com/grafana/grafana  && \
     git checkout v${GRAFANAVERSION}            && \
-    go run build.go setup     && \
-    $GOPATH/bin/godep restore -d && \
-    npm install --sass_binary_site=https://dl.bintray.com/fg2it/generic/ && \
-    npm install -g grunt-cli  && \
-    go run build.go build pkg-deb
+    go get -v github.com/tools/godep           && \
+    CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc CXX=arm-linux-gnueabihf-g++ \
+      GOOS=linux GOARCH=arm GOARM=7 go get -v github.com/mattn/go-sqlite3 && \
+   CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc CXX=arm-linux-gnueabihf-g++ \
+      GOOS=linux GOARCH=arm GOARM=7 go install -v github.com/mattn/go-sqlite3 && \
+    CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc CXX=arm-linux-gnueabihf-g++ \
+      GOOS=linux GOARCH=arm GOARM=7 $GOPATH/bin/godep restore &&\  
+    npm install                       && \
+    npm config set unsafe-perm true   && \
+    npm install -g grunt-cli
+
+COPY crossBuild.go $GOPATH/src/github.com/grafana/grafana
+
+RUN cd $GOPATH/src/github.com/grafana/grafana  && \
+    go run crossBuild.go build        && \
+    grunt release                     && \
+    curl -sSL ${PHJSURL}/phantomjs -o /usr/local/bin/phantomjs && \
+    cp /usr/local/bin/phantomjs tmp/vendor/phantomjs && \
+    go run crossBuild.go pkg-deb
 
 CMD ["/bin/bash"]
