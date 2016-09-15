@@ -20,7 +20,9 @@ deploy:
   provider: releases
   api_key:
     secure: OAlQ744IJXbYcBBeaIV9CiWN1Ea9MXXDHyC5mIzOhprlvAon9KO0u3KHPAjam7XZjMa36GvSol0job33GpyJXQO7oSdJbZVjtPlPtd+KbGClMivnvi9DOPP4NqbN9DiH7oza7ywReVTsyvyCJbhr66dYqsC7Cl6aDl0n/IsLCan6F7aHma3605cuGT8RS7OXkHnSSXgML9f5KUNjZf7XmLAwoE7tvp7U47GcVdDy49PsSxYaT9/HZqgViyavtfTiqSAVGzcxfR7mFyu+L/RJ11gGMTEFgOrpdTjy+vfqHA/T+cTt8cdfkQXFcCIEQu9B3EfqI30Hf9+YHVrIjTbqj5tJI/A+dJFZfu8BpgHuYrM/zcx9pZFquvTpGiXme9ifKrR3trzL6TQyoC5mk1SFFprGtqLh60XiVC8EmSANQd4ffr7hQXbS0PtGVBfdnB2hDRRKCc7kpEiYEwn6kESMWO2qc+h4bznE6Q/52+rX5cvVeFKjF5bjpUK9Nqh3To2d+KlVIxn3Ly65/U/aCSIArQm2iLYZnjVh7SfNbE4T6V28Ml3V/Iud5uqyDSclPjNCyfAE1cWhlmsW+J8DOPzGAl5La1iKANCLoh25wwJR9M3mF99i60Hi5RdS6x3eqOUQ67ztPpCsimsSVMwOtLe2X2kUTfNIrDpUbcTlTC1hB9k=
-  file: $DEB
+  file:
+    - $DEB
+    - $TARBALL
   skip_cleanup: true
   on:
     tags: true
