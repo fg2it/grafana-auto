@@ -25,6 +25,10 @@ var (
 	versionRe = regexp.MustCompile(`-[0-9]{1,3}-g[0-9a-f]{5,10}`)
 	goarch    string
 	goos      string
+	gocc      string
+	gocxx     string
+	cgo       string
+	pkgArch   string
 	version   string = "v1"
 	// deb & rpm does not support semver so have to handle their version a little differently
 	linuxPackageVersion   string = "v1"
@@ -34,7 +38,7 @@ var (
 	binaries              []string = []string{"grafana-server", "grafana-cli"}
 )
 
-const minGoVersion = 1.3
+const minGoVersion = 1.7
 
 func main() {
 	log.SetOutput(os.Stdout)
@@ -47,6 +51,10 @@ func main() {
 
 	flag.StringVar(&goarch, "goarch", runtime.GOARCH, "GOARCH")
 	flag.StringVar(&goos, "goos", runtime.GOOS, "GOOS")
+	flag.StringVar(&gocc, "cc", "", "CC")
+	flag.StringVar(&gocxx, "cxx", "", "CXX")
+	flag.StringVar(&cgo, "cgo-enabled", "", "CGO_ENABLED")
+	flag.StringVar(&pkgArch, "pkg-arch", "", "PKG ARCH")
 	flag.BoolVar(&race, "race", race, "Use race detector")
 	flag.Parse()
 
@@ -77,9 +85,11 @@ func main() {
 			createLinuxPackages()
 
 		case "pkg-rpm":
+			grunt("release")
 			createRpmPackages()
 
 		case "pkg-deb":
+//			grunt("release")
 			createDebPackages()
 
 		case "latest":
@@ -253,8 +263,11 @@ func createPackage(options linuxPackageOptions) {
 		"--after-install", options.postinstSrc,
 		"--name", "grafana",
 		"--version", linuxPackageVersion,
-		"-a", "armhf",
 		"-p", "./dist",
+	}
+
+	if pkgArch != "" {
+		args = append(args, "-a", pkgArch)
 	}
 
 	if linuxPackageIteration != "" {
@@ -307,8 +320,8 @@ func grunt(params ...string) {
 }
 
 func setup() {
-	runPrint("go", "get", "-v", "github.com/tools/godep")
-	runPrint("go", "get", "-v", "github.com/blang/semver")
+	runPrint("go", "get", "-v", "github.com/kardianos/govendor")
+  runPrint("go", "get", "-v", "github.com/blang/semver")
 	runPrint("go", "get", "-v", "github.com/mattn/go-sqlite3")
 	runPrint("go", "install", "-v", "github.com/mattn/go-sqlite3")
 }
@@ -365,7 +378,6 @@ func rmr(paths ...string) {
 }
 
 func clean() {
-	rmr("bin", "Godeps/_workspace/pkg", "Godeps/_workspace/bin")
 	rmr("dist")
 	rmr("tmp")
 	rmr(filepath.Join(os.Getenv("GOPATH"), fmt.Sprintf("pkg/%s_%s/github.com/grafana", goos, goarch)))
@@ -382,13 +394,15 @@ func setBuildEnv() {
 	if goarch == "386" {
 		os.Setenv("GO386", "387")
 	}
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Println("Warning: can't determine current dir:", err)
-		log.Println("Build might not work as expected")
+	if cgo !="" {
+		os.Setenv("CGO_ENABLED",cgo)
 	}
-	os.Setenv("GOPATH", fmt.Sprintf("%s%c%s", filepath.Join(wd, "Godeps", "_workspace"), os.PathListSeparator, os.Getenv("GOPATH")))
-	log.Println("GOPATH=" + os.Getenv("GOPATH"))
+	if gocc !="" {
+		os.Setenv("CC",gocc)
+	}
+	if gocxx !="" {
+		os.Setenv("CXX",gocxx)
+	}
 }
 
 func getGitSha() string {
@@ -445,19 +459,7 @@ func runPrint(cmd string, args ...string) {
 	ecmd := exec.Command(cmd, args...)
 	ecmd.Stdout = os.Stdout
 	ecmd.Stderr = os.Stderr
-        if cmd == "go" {
-                ecmd.Env = []string{
-                           "CGO_ENABLED=1",
-                           "CC=arm-linux-gnueabihf-gcc",
-                           "CXX=arm-linux-gnueabihf-g++",
-                           "GOOS=linux",
-                           "GOARCH=arm",
-                           "GOARM=7",
-                           "GOPATH=" + os.Getenv("GOPATH"),
-                           "PATH=" + os.Getenv("PATH"),
-                }
-        }
-        err := ecmd.Run()
+	err := ecmd.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
