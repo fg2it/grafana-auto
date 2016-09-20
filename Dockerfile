@@ -1,4 +1,4 @@
-#Grafana 3.1.1 on wheezy/jessie using node 5.10.1
+#Grafana master on wheezy/jessie using node 5.10.1
 FROM debian:jessie
 MAINTAINER fg2it
 
@@ -33,26 +33,21 @@ RUN apt-get update       && \
       | tar -xz -C /usr/local && \
     curl -sSL https://nodejs.org/dist/v${NODEVERSION}/node-v${NODEVERSION}-linux-x64.tar.xz    \
       | tar -xJ --strip-components=1 -C /usr/local && \
+    curl -sSL ${PHJSURL}/phantomjs -o /usr/local/bin/phantomjs && \
+    chmod a+x /usr/local/bin/phantomjs && \
     mkdir -p $GOPATH          && \
     cd $GOPATH                && \
     go get github.com/grafana/grafana  || true && \
     cd $GOPATH/src/github.com/grafana/grafana  && \
-    npm install                       && \
-    npm config set unsafe-perm true   && \
-    npm install -g grunt-cli
-
-COPY crossBuild.go $GOPATH/src/github.com/grafana/grafana
-
-RUN cd $GOPATH/src/github.com/grafana/grafana  && \
-    go run crossBuild.go setup        && \
-    go run crossBuild.go -goarch=armv7                 \
-                         -cgo-enabled=1                \
-                         -cc=arm-linux-gnueabihf-gcc   \
-                         -cxx=arm-linux-gnueabihf-g++  \
-                         build        && \
-    grunt release                     && \
-    curl -sSL ${PHJSURL}/phantomjs -o /usr/local/bin/phantomjs && \
-    cp /usr/local/bin/phantomjs tmp/vendor/phantomjs && \
-    go run crossBuild.go -pkg-arch=armhf pkg-deb
+    npm install                                && \
+    go run build.go setup                      && \
+    go run build.go                   \
+       -goarch=armv7                  \
+       -cgo-enabled=1                 \
+       -cc=arm-linux-gnueabihf-gcc    \
+       -cxx=arm-linux-gnueabihf-g++   \
+       -phjs=/usr/local/bin/phantomjs \
+           build                      \
+           pkg-deb
 
 CMD ["/bin/bash"]
