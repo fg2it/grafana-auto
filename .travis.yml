@@ -3,12 +3,18 @@ sudo: required
 services:
   - docker
 
+env:
+  - ARCH=armv6
+  - ARCH=armv7
+
 install: true
 
-script:
+before_script:
   - docker pull debian:jessie
   - docker build -t fg2it/grafana-auto .
-  - docker run --name build-armv7 fg2it/grafana-auto ./build.sh armv7
+
+script:
+  - docker run --name build-armv7 fg2it/grafana-auto ./build.sh ${ARCH}
 
 before_deploy:
   - docker cp build-armv6:/tmp/graf-build/src/github.com/grafana/grafana/dist/ armv6
