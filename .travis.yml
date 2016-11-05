@@ -8,9 +8,9 @@ install: true
 script:
   - docker pull debian:jessie
   - docker build -t fg2it/grafana-auto .
+  - docker run -d --name build-armv7 fg2it/grafana-auto ./build.sh armv7
 
 before_deploy:
-  - docker run -d --name build fg2it/grafana-auto bash
   - docker cp build:/tmp/graf-build/src/github.com/grafana/grafana/dist/ .
   - export DEB=`ls dist/grafana*.deb`
   - export TARBALL=`ls dist/grafana*.tar.gz`
