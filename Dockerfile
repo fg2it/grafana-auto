@@ -5,7 +5,7 @@ MAINTAINER fg2it
 ENV PATH=/usr/local/go/bin:$PATH \
     GOPATH=/tmp/graf-build \
     NODEVERSION=5.10.1 \
-    PHJSURL=https://github.com/fg2it/phantomjs-on-raspberry/releases/download/v2.1.1-wheezy-jessie/
+    PHJSURL=https://github.com/fg2it/phantomjs-on-raspberry/releases/download/v2.1.1-wheezy-jessie-armv6/
 
 RUN apt-get update       && \
     apt-get install -y      \
@@ -22,7 +22,7 @@ RUN apt-get update       && \
         g++                 \
         ruby                \
         ruby-dev         && \
-    echo "deb http://emdebian.org/tools/debian/ jessie main" >> /etc/apt/sources.list    && \
+    echo "deb http://emdebian.org/tools/debian/ jessie main" >> /etc/apt/sources.list.d/crosstools.list    && \
     curl -sSL http://emdebian.org/tools/debian/emdebian-toolchain-archive.key | apt-key add - && \
     dpkg --add-architecture armhf && \
     apt-get update       && \
@@ -33,8 +33,8 @@ RUN apt-get update       && \
       | tar -xz -C /usr/local && \
     curl -sSL https://nodejs.org/dist/v${NODEVERSION}/node-v${NODEVERSION}-linux-x64.tar.xz    \
       | tar -xJ --strip-components=1 -C /usr/local && \
-    curl -sSL ${PHJSURL}/phantomjs -o /usr/local/bin/phantomjs && \
-    chmod a+x /usr/local/bin/phantomjs && \
+    curl -sSL ${PHJSURL}/phantomjs -o /tmp/phantomjs && \
+    chmod a+x /tmp/phantomjs && \
     mkdir -p $GOPATH          && \
     cd $GOPATH                && \
     go get github.com/grafana/grafana  || true && \
@@ -42,11 +42,12 @@ RUN apt-get update       && \
     npm install                                && \
     go run build.go setup                      && \
     go run build.go                   \
+       -pkg-arch=armhf                \
        -goarch=armv7                  \
        -cgo-enabled=1                 \
        -cc=arm-linux-gnueabihf-gcc    \
        -cxx=arm-linux-gnueabihf-g++   \
-       -phjs=/usr/local/bin/phantomjs \
+       -phjs=/tmp/phantomjs           \
            build                      \
            pkg-deb
 
