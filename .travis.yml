@@ -11,8 +11,8 @@ before_script:
   - docker build -t fg2it/grafana-auto .
 
 script:
-  - docker run --name build-armv6 fg2it/grafana-auto ./build.sh armv6
-  - docker run --name build-armv7 fg2it/grafana-auto ./build.sh armv7
+  - docker run --name build-armv6 fg2it/grafana-auto ./build.sh armv6 ${TRAVIS_TAG}
+  - docker run --name build-armv7 fg2it/grafana-auto ./build.sh armv7 ${TRAVIS_TAG}
 
 before_deploy:
   - docker cp build-armv6:/tmp/graf-build/src/github.com/grafana/grafana/dist/ armv6

@@ -5,12 +5,19 @@ set -x
 usage() {
   base="$(basename "$0")"
   cat <<EOUSAGE
-usage: $base arch
+usage: $base arch [commit|tag]
 Install specific packages to build grafana for either armv6 or armv7
 Available arch:
-  $base armv6
-  $base armv7
+  $base armv6 [commit|tag]
+  $base armv7 [commit|tag]
 EOUSAGE
+}
+
+check_commit() {
+  cd $GOPATH/src/github.com/grafana/grafana
+  if [ -n "$1" ] && [ -z `git rev-parse --verify $1` ]; then
+    exit 1
+  fi
 }
 
 install_phjs() {
@@ -41,6 +48,7 @@ armv7_install_cross() {
 
 build() {
   cd $GOPATH/src/github.com/grafana/grafana
+  git checkout $COMMIT
   go run build.go                   \
      -pkg-arch=armhf                \
      -goarch=${ARM}                 \
@@ -52,25 +60,34 @@ build() {
          pkg-deb
 }
 
-if [ "$#" -ne 1 ]; then
+if (( ($# < 1) && ($# > 2) )); then
 	usage >&2
 	exit 1
 fi
 
 ARM="$1"
 
-if [ "$ARM" = "armv6" ]; then
-  PHJSV="v2.1.1-wheezy-jessie-armv6"
-  armv6_install_cross
-elif [ "$ARM" = "armv7" ]; then
-  PHJSV="v2.1.1-wheezy-jessie"
-  armv7_install_cross
-else
-  echo >&2 'error: unknown arch:' "$ARM"
-  usage >&2
-  exit 1
+COMMIT="master"
+if (( $# == 2)); then
+  COMMIT=${2%*-testing}
+  check_commit $COMMIT
 fi
 
+case "$ARM" in
+  armv6)
+    PHJSV="v2.1.1-wheezy-jessie-armv6"
+    armv6_install_cross
+    ;;
+  armv7)
+    PHJSV="v2.1.1-wheezy-jessie"
+    armv7_install_cross
+    ;;
+  *)
+    echo >&2 'error: unknown arch:' "$ARM"
+    usage >&2
+    exit 1
+    ;;
+esac
 
 install_phjs
-build
+build $2
