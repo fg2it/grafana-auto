@@ -1,12 +1,9 @@
+language: python
+python:
+  - "3.4"
 sudo: required
-
 services:
   - docker
-
-env:
-  - ARCH=armv6
-  - ARCH=armv7
-
 install: true
 
 before_script:
@@ -14,23 +11,46 @@ before_script:
   - docker build -t fg2it/grafana-auto .
 
 script:
-  - docker run --name build-${ARCH} fg2it/grafana-auto ./build.sh ${ARCH}
+  - docker run --name build-armv6 fg2it/grafana-auto ./build.sh armv6
+  - docker run --name build-armv7 fg2it/grafana-auto ./build.sh armv7
 
 before_deploy:
-  - docker cp build-${ARCH}:/tmp/graf-build/src/github.com/grafana/grafana/dist/ ${ARCH}
-  - export DEB=`ls ${ARCH}/grafana*.deb`
-  - export TARBALL=`ls ${ARCH}/grafana*.tar.gz`
-  - echo $DEB $TARBALL
+  - docker cp build-armv6:/tmp/graf-build/src/github.com/grafana/grafana/dist/ armv6
+  - export DEB6=`ls armv6/grafana*.deb`
+  - export TARBALL6=`ls armv6/grafana*.tar.gz`
+  - echo $DEB6 $TARBALL6
+  - docker cp build-armv7:/tmp/graf-build/src/github.com/grafana/grafana/dist/ armv7
+  - export DEB7=`ls armv7/grafana*.deb`
+  - export TARBALL7=`ls armv7/grafana*.tar.gz`
+  - echo $DEB7 $TARBALL7
+  - ./createDescriptionFile.py
+  - cat armv6.d
+  - cat armv7.d
 
 deploy:
-  provider: releases
-  api_key:
-    secure: OAlQ744IJXbYcBBeaIV9CiWN1Ea9MXXDHyC5mIzOhprlvAon9KO0u3KHPAjam7XZjMa36GvSol0job33GpyJXQO7oSdJbZVjtPlPtd+KbGClMivnvi9DOPP4NqbN9DiH7oza7ywReVTsyvyCJbhr66dYqsC7Cl6aDl0n/IsLCan6F7aHma3605cuGT8RS7OXkHnSSXgML9f5KUNjZf7XmLAwoE7tvp7U47GcVdDy49PsSxYaT9/HZqgViyavtfTiqSAVGzcxfR7mFyu+L/RJ11gGMTEFgOrpdTjy+vfqHA/T+cTt8cdfkQXFcCIEQu9B3EfqI30Hf9+YHVrIjTbqj5tJI/A+dJFZfu8BpgHuYrM/zcx9pZFquvTpGiXme9ifKrR3trzL6TQyoC5mk1SFFprGtqLh60XiVC8EmSANQd4ffr7hQXbS0PtGVBfdnB2hDRRKCc7kpEiYEwn6kESMWO2qc+h4bznE6Q/52+rX5cvVeFKjF5bjpUK9Nqh3To2d+KlVIxn3Ly65/U/aCSIArQm2iLYZnjVh7SfNbE4T6V28Ml3V/Iud5uqyDSclPjNCyfAE1cWhlmsW+J8DOPzGAl5La1iKANCLoh25wwJR9M3mF99i60Hi5RdS6x3eqOUQ67ztPpCsimsSVMwOtLe2X2kUTfNIrDpUbcTlTC1hB9k=
-  file:
-    - $DEB
-    - $TARBALL
-  skip_cleanup: true
-  on:
-    tags: true
-    condition: $ARCH = armv7
-    repo: fg2it/grafana-auto
+  - provider: releases
+    api_key:
+      secure: OAlQ744IJXbYcBBeaIV9CiWN1Ea9MXXDHyC5mIzOhprlvAon9KO0u3KHPAjam7XZjMa36GvSol0job33GpyJXQO7oSdJbZVjtPlPtd+KbGClMivnvi9DOPP4NqbN9DiH7oza7ywReVTsyvyCJbhr66dYqsC7Cl6aDl0n/IsLCan6F7aHma3605cuGT8RS7OXkHnSSXgML9f5KUNjZf7XmLAwoE7tvp7U47GcVdDy49PsSxYaT9/HZqgViyavtfTiqSAVGzcxfR7mFyu+L/RJ11gGMTEFgOrpdTjy+vfqHA/T+cTt8cdfkQXFcCIEQu9B3EfqI30Hf9+YHVrIjTbqj5tJI/A+dJFZfu8BpgHuYrM/zcx9pZFquvTpGiXme9ifKrR3trzL6TQyoC5mk1SFFprGtqLh60XiVC8EmSANQd4ffr7hQXbS0PtGVBfdnB2hDRRKCc7kpEiYEwn6kESMWO2qc+h4bznE6Q/52+rX5cvVeFKjF5bjpUK9Nqh3To2d+KlVIxn3Ly65/U/aCSIArQm2iLYZnjVh7SfNbE4T6V28Ml3V/Iud5uqyDSclPjNCyfAE1cWhlmsW+J8DOPzGAl5La1iKANCLoh25wwJR9M3mF99i60Hi5RdS6x3eqOUQ67ztPpCsimsSVMwOtLe2X2kUTfNIrDpUbcTlTC1hB9k=
+    file:
+      - $DEB7
+      - $TARBALL7
+    skip_cleanup: true
+    on:
+      tags: true
+      repo: fg2it/grafana-auto
+  - provider: bintray
+    file: armv6.d
+    user: fg2it
+    key:
+      secure: "NR9H7ES5p0N+bMaPhqo9qLW7yNTITSLbb5KEPB7NwC3qAjN0ZCTTCKocae7CpGMMs16WZNz+h0gPHL8uxERRMD6aGlNpdW81WtdPKxWiSk10OgjvcqJbqGx56IJndInq0KelG8Bvv50EI+WCVsQE9xIDd8hRrZl0gHz/ReRrwUC7XU3pLxzCyyktpzjPA2fLFAEFkZeGFDnDdz1is0QETa5p61tV6Gf5KfVhwSpTuGBXcr6AfyiRNBV5ZuzrmWtKvKsl2kO6Kb2jG/U7bAWzsAMeZmypbA7059aGRW5PrjISNdYPUwQcEIeMExPKcoXvDDqDu3rbMGPQTcNeXFSgslE3sxcUTg4GAunRSvMYAPtIdieAqb6pl1ExxpMj7IWlFAeffXk05tof/BOsyfkcAKMcAEoC4kU6OimnzTady9m0UsXzey6HGpLxbrZwdSOdkNXKtM3MB/4dMUqyvcSKspuwMguqLaUoCyPbSwtJJW3xsDuiEK8SbQOM66Uz0dEBJ+3XhKL1uNOR9NRxzM/yBe40BvSn17VNBZ2x/w+HMqLpJyRTWVbrBLBU+oDyU6iZUiTqh/8SaKRplNad5ccoNjYeN35401z2eqSDklvG4QL8Q+mN0FPc5W1Zdi/UV+85DZrYMC+vIK6T37VnhUlxXELWgD1P43itoJcNzgWh/Mc="
+    skip_cleanup: true
+    on:
+      tags: true
+  - provider: bintray
+    file: armv7.d
+    user: fg2it
+    key:
+      secure: "NR9H7ES5p0N+bMaPhqo9qLW7yNTITSLbb5KEPB7NwC3qAjN0ZCTTCKocae7CpGMMs16WZNz+h0gPHL8uxERRMD6aGlNpdW81WtdPKxWiSk10OgjvcqJbqGx56IJndInq0KelG8Bvv50EI+WCVsQE9xIDd8hRrZl0gHz/ReRrwUC7XU3pLxzCyyktpzjPA2fLFAEFkZeGFDnDdz1is0QETa5p61tV6Gf5KfVhwSpTuGBXcr6AfyiRNBV5ZuzrmWtKvKsl2kO6Kb2jG/U7bAWzsAMeZmypbA7059aGRW5PrjISNdYPUwQcEIeMExPKcoXvDDqDu3rbMGPQTcNeXFSgslE3sxcUTg4GAunRSvMYAPtIdieAqb6pl1ExxpMj7IWlFAeffXk05tof/BOsyfkcAKMcAEoC4kU6OimnzTady9m0UsXzey6HGpLxbrZwdSOdkNXKtM3MB/4dMUqyvcSKspuwMguqLaUoCyPbSwtJJW3xsDuiEK8SbQOM66Uz0dEBJ+3XhKL1uNOR9NRxzM/yBe40BvSn17VNBZ2x/w+HMqLpJyRTWVbrBLBU+oDyU6iZUiTqh/8SaKRplNad5ccoNjYeN35401z2eqSDklvG4QL8Q+mN0FPc5W1Zdi/UV+85DZrYMC+vIK6T37VnhUlxXELWgD1P43itoJcNzgWh/Mc="
+    skip_cleanup: true
+    on:
+      tags: true
