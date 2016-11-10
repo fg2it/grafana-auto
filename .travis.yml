@@ -14,7 +14,7 @@ script:
   - docker run --name build-armv6 fg2it/grafana-auto ./build.sh armv6 ${TRAVIS_TAG}
   - docker run --name build-armv7 fg2it/grafana-auto ./build.sh armv7 ${TRAVIS_TAG}
 
-before_deploy:
+after_success:
   - docker cp build-armv6:/tmp/graf-build/src/github.com/grafana/grafana/dist/ armv6
   - export DEB6=`ls armv6/grafana*.deb`
   - export TARBALL6=`ls armv6/grafana*.tar.gz`
