@@ -8,7 +8,7 @@ install: true
 
 before_script:
   - docker pull debian:jessie
-  - docker build -t fg2it/grafana-auto .
+  - docker build -t fg2it/grafana-auto -f ci/Dockerfile ci
 
 script:
   - docker run --name build-armv6 fg2it/grafana-auto ./build.sh armv6 ${TRAVIS_TAG}
@@ -23,7 +23,7 @@ after_success:
   - export DEB7=`ls armv7/grafana*.deb`
   - export TARBALL7=`ls armv7/grafana*.tar.gz`
   - echo $DEB7 $TARBALL7
-  - ./createDescriptionFile.py
+  - ./ci/createDescriptionFile.py
   - cat armv6.d
   - cat armv7.d
 
